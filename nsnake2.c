@@ -1,11 +1,16 @@
+// conpile with the -lncurses tag
+
 #include <ncurses.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #define ID_GROUND 1
 #define ID_HEAD 2
 #define ID_BODY 3
 #define ID_FOOD 4
 #define ID_WALL 5
+
+
 
 struct Snake {
     int alive;
@@ -44,17 +49,69 @@ void Print_Snake_part(char part, int y, int x, char dir){
 
 void SetBorder(){
     attron(COLOR_PAIR(ID_WALL));
-    mvprintw(2,5, "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");
-    for(int i = 0; i < 13; i++){
+    mvprintw(2,5, "WWWWWWWWWWWWWWWWWWWWWWWWWWWWW");
+    for(int i = 0; i < 10; i++){
         mvprintw(2+i,5, "W");
-        mvprintw(2+i,60, "W");
+        mvprintw(2+i,33, "W");
 
     }
-    mvprintw(15,5, "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");
+    mvprintw(12,5, "WWWWWWWWWWWWWWWWWWWWWWWWWWWWW");
 
     attroff(COLOR_PAIR(ID_WALL));
 }
+
+// snack can be in
+// x: 6 to 59
+// y: 3 to 14
+
+int Spawn_Snack_Position(){
+    int x_upper = 32;
+    int x_lower = 6;
+    int y_upper = 11;
+    int y_lower = 3;
+    int snack_pos_x = snack_pos_x = (rand() % (x_upper - x_lower + 1)) + x_lower;
+    int snack_pos_y = snack_pos_y = (rand() % (y_upper - y_lower + 1)) + y_lower;
+    return snack_pos_x * 100 + snack_pos_y;
+}
+
+void SpawnSnack(){
     
+    int snack_pos = Spawn_Snack_Position();
+    chtype snack_pos_char = mvinch(snack_pos % 100,snack_pos / 100);
+
+    do {
+        snack_pos = Spawn_Snack_Position();
+        snack_pos_char = mvinch(snack_pos % 100,snack_pos / 100);
+    } while(PAIR_NUMBER(snack_pos_char) != ID_GROUND);
+
+    attron(COLOR_PAIR(ID_FOOD));
+    mvprintw(snack_pos % 100,snack_pos / 100, "O");
+    attroff(COLOR_PAIR(ID_FOOD));
+}
+
+void Direction_Switch(int coordinate[], char direction){
+    switch (direction) {
+        case 'R':
+            // right
+            coordinate[1] += 1;
+            break;
+        case 'L':
+            // left
+            coordinate[1] -= 1;
+            break;
+        case 'U':
+            // up
+            coordinate[0] -= 1;
+            break;
+        case 'D':
+            // down
+            coordinate[0] += 1;
+            break;
+        default:
+            printf("ERROR WRONG CHAR IN MOVE_SNAKE: %c",direction);
+    }
+}
+
 void Move_Snake(struct Snake *s, char direction) {
     // saves direction on tail so next tail position can be told
     char tail_dir = mvinch(s->tail_pos[0],s->tail_pos[1]) & A_CHARTEXT;
@@ -64,26 +121,7 @@ void Move_Snake(struct Snake *s, char direction) {
     // print direction on old head slot
     Print_Snake_part('B', s->head_pos[0], s->head_pos[1], direction); 
     // new head pos
-    switch (direction) {
-        case 'R':
-            // right
-            s -> head_pos[1] += 1;
-            break;
-        case 'L':
-            // left
-            s -> head_pos[1] -= 1;
-            break;
-        case 'U':
-            // up
-            s -> head_pos[0] -= 1;
-            break;
-        case 'D':
-            // down
-            s -> head_pos[0] += 1;
-            break;
-        default:
-            printf("ERROR WRONG CHAR IN MOVE_SNAKE: %c",direction);
-    }
+    Direction_Switch(s -> head_pos, direction);
 
     // if new head slot is not blank then quit
     chtype head_char = mvinch(s -> head_pos[0],s -> head_pos[1]);
@@ -111,31 +149,12 @@ void Move_Snake(struct Snake *s, char direction) {
         // make old tail into a background
         Print_Snake_part('G',init_tail_pos[0],init_tail_pos[1],' ');
         // update tail position by its direction
-        switch (tail_dir) {
-            case 'R':
-                // right
-                s -> tail_pos[1] += 1;
-                break;
-            case 'L':
-                // left
-                s -> tail_pos[1] -= 1;
-                break;
-            case 'U':
-                // up
-                s -> tail_pos[0] -= 1;
-                break;
-            case 'D':
-                // down
-                s -> tail_pos[0] += 1;
-                break;
-            default:
-            printf("ERROR WRONG CHAR IN MOVE_SNAKE: %c",direction);
-        }
+        Direction_Switch(s -> tail_pos, tail_dir);
 
     } else {
         // NOM NOM
         s -> length ++;
-        // SpawnSnack();
+        SpawnSnack();
     }
     
     //make new tail position into a body(just in case when length is 2)
@@ -185,36 +204,26 @@ int main() {
     keypad(stdscr, TRUE);   // starts reading Keyboard keys
     noecho();   // doesnt print keyboard input
 
-    move(starting_head_position[0],starting_head_position[1]-4);
-    attron(COLOR_PAIR(ID_BODY));
-    printw("R");
-    attroff(COLOR_PAIR(ID_BODY));
 
-    move(starting_head_position[0],starting_head_position[1]-3);
-    attron(COLOR_PAIR(ID_BODY));
-    printw("R");
-    attroff(COLOR_PAIR(ID_BODY));
-    
-    move(starting_head_position[0],starting_head_position[1]-2);
-    attron(COLOR_PAIR(ID_BODY));
-    printw("R");
-    attroff(COLOR_PAIR(ID_BODY));
 
-    move(starting_head_position[0],starting_head_position[1]-1);
-    attron(COLOR_PAIR(ID_BODY));
-    printw("R");
-    attroff(COLOR_PAIR(ID_BODY));
+    for(int i = 1; i < 5; i++) {
+        move(starting_head_position[0],starting_head_position[1]-i);
+        attron(COLOR_PAIR(ID_BODY));
+        printw("R");
+        attroff(COLOR_PAIR(ID_BODY));
+    }
 
     move(starting_head_position[0],starting_head_position[1]);
     attron(COLOR_PAIR(ID_HEAD));
     printw("'");
     attroff(COLOR_PAIR(ID_HEAD));
     
-    
-    move(7,7);
-    attron(COLOR_PAIR(ID_FOOD));
-    printw("O");
-    attroff(COLOR_PAIR(ID_FOOD));
+
+    SpawnSnack();
+    // move(7,7);
+    // attron(COLOR_PAIR(ID_FOOD));
+    // printw("O");
+    // attroff(COLOR_PAIR(ID_FOOD));
     
     
     refresh();  // updates output?
@@ -224,16 +233,16 @@ int main() {
     SetBorder();
     
     
-    mvprintw(7,19, "<Press Any Button to Start>");
+    mvprintw(5,7, "<Press Any Key to Start>");
     getch(); //wait for input
-    mvprintw(7,19, "                           ");
+    mvprintw(5,7, "                        ");
     
     char current_direction = 'R';
     nodelay(stdscr,TRUE);
     while(s.alive){
         mvprintw(2,0,"%d", s.alive);
         mvprintw(4,0,"%c", current_direction);
-        mvprintw(5,0,"%d", s.length);
+        mvprintw(5,0,"%d", s.length-5);
         ch = getch();
         if(ch != ERR){
             switch(ch){
@@ -277,13 +286,17 @@ int main() {
         Move_Snake(&s,current_direction);
 
         refresh();
-        usleep(500000);
+        usleep(250000);
 
     }
 
-    getch();    // wait for user input
+    //after death
+
     echo();     // input will now echo so my text wont be invisible(by duran duran plays) anymore
+    getch();    // wait for user input
     endwin();   // ends curses mode
 
     return 0;
 }
+
+// gcc nsnake2.c -lcurses -o snake
