@@ -5,6 +5,7 @@
 #define ID_HEAD 2
 #define ID_BODY 3
 #define ID_FOOD 4
+#define ID_WALL 5
 
 struct Snake {
     int alive;
@@ -39,6 +40,19 @@ void Print_Snake_part(char part, int y, int x, char dir){
             endwin();
 		    printf("Your terminal does not support color\n");
     }
+}
+
+void SetBorder(){
+    attron(COLOR_PAIR(ID_WALL));
+    mvprintw(2,5, "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");
+    for(int i = 0; i < 13; i++){
+        mvprintw(2+i,5, "W");
+        mvprintw(2+i,60, "W");
+
+    }
+    mvprintw(15,5, "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");
+
+    attroff(COLOR_PAIR(ID_WALL));
 }
     
 void Move_Snake(struct Snake *s, char direction) {
@@ -75,7 +89,8 @@ void Move_Snake(struct Snake *s, char direction) {
     chtype head_char = mvinch(s -> head_pos[0],s -> head_pos[1]);
     mvprintw(0,0,"%d",PAIR_NUMBER(head_char));
 
-    if(PAIR_NUMBER(head_char) == ID_BODY){
+    // if head new head position is body / wall -> die
+    if(PAIR_NUMBER(head_char) == ID_BODY || PAIR_NUMBER(head_char) == ID_WALL){
         //if it isnt empty ground
         mvprintw(1,0,"DEAD");
         s -> alive = 0;
@@ -120,6 +135,7 @@ void Move_Snake(struct Snake *s, char direction) {
     } else {
         // NOM NOM
         s -> length ++;
+        // SpawnSnack();
     }
     
     //make new tail position into a body(just in case when length is 2)
@@ -132,12 +148,12 @@ void Move_Snake(struct Snake *s, char direction) {
 
 
 int main() {
-
+    int starting_head_position[2] = {8,13}; 
     struct Snake s = {
         .alive = 1,
         .move_direction = 'R',
-        .head_pos = {3,8},
-        .tail_pos = {3,4},
+        .head_pos = {8,13},
+        .tail_pos = {8,9},
         .length = 5
     };
 
@@ -161,6 +177,7 @@ int main() {
     init_pair(ID_HEAD, COLOR_WHITE, COLOR_RED); // head
     init_pair(ID_BODY, COLOR_GREEN, COLOR_GREEN); // body
     init_pair(ID_FOOD, COLOR_RED, COLOR_WHITE); // food
+    init_pair(ID_WALL, COLOR_BLUE, COLOR_BLUE); // wall
 
     bkgd(COLOR_PAIR(ID_GROUND));
 
@@ -168,42 +185,48 @@ int main() {
     keypad(stdscr, TRUE);   // starts reading Keyboard keys
     noecho();   // doesnt print keyboard input
 
-    move(s.tail_pos[0],s.tail_pos[1]);
+    move(starting_head_position[0],starting_head_position[1]-4);
     attron(COLOR_PAIR(ID_BODY));
     printw("R");
     attroff(COLOR_PAIR(ID_BODY));
 
-    move(3,5);
+    move(starting_head_position[0],starting_head_position[1]-3);
     attron(COLOR_PAIR(ID_BODY));
     printw("R");
     attroff(COLOR_PAIR(ID_BODY));
     
-    move(3,6);
+    move(starting_head_position[0],starting_head_position[1]-2);
     attron(COLOR_PAIR(ID_BODY));
     printw("R");
     attroff(COLOR_PAIR(ID_BODY));
 
-    move(3,7);
+    move(starting_head_position[0],starting_head_position[1]-1);
     attron(COLOR_PAIR(ID_BODY));
     printw("R");
     attroff(COLOR_PAIR(ID_BODY));
 
-    move(s.head_pos[0],s.head_pos[1]);
+    move(starting_head_position[0],starting_head_position[1]);
     attron(COLOR_PAIR(ID_HEAD));
     printw("'");
     attroff(COLOR_PAIR(ID_HEAD));
     
-
+    
     move(7,7);
     attron(COLOR_PAIR(ID_FOOD));
     printw("O");
     attroff(COLOR_PAIR(ID_FOOD));
-
-
+    
+    
     refresh();  // updates output?
-
-    usleep(500000);
-
+    
+    
+    
+    SetBorder();
+    
+    
+    mvprintw(7,19, "<Press Any Button to Start>");
+    getch(); //wait for input
+    mvprintw(7,19, "                           ");
     
     char current_direction = 'R';
     nodelay(stdscr,TRUE);
@@ -246,7 +269,6 @@ int main() {
                     endwin();
                     echo();
                     s.alive = 0;
-                    return 0;
                     break;
             }           
         }
