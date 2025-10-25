@@ -75,7 +75,6 @@ void SetBorder() {
 
 void DIE(struct Snake *s) {
     //   -----'x_x'   <- catapillar died because of your incompetence
-    mvprintw(1,0,"DEAD");
     nodelay(stdscr,FALSE);
 
     mvprintw(4,12, "-----'x_x'");
@@ -271,7 +270,6 @@ void Move_Snake(struct Snake *s, char direction) {
 
     // if new head slot is not blank then quit
     chtype head_char = mvinch(s -> head_pos[0],s -> head_pos[1]);
-    mvprintw(0,0,"%d",PAIR_NUMBER(head_char));
 
     // if head new head position is body / wall -> die
     if(PAIR_NUMBER(head_char) == ID_BODY || PAIR_NUMBER(head_char) == ID_WALL){
@@ -399,9 +397,10 @@ int main() {
     char current_direction = 'R';
     nodelay(stdscr,TRUE);
     while(s.alive){
-        mvprintw(2,0,"%d", s.alive);
-        mvprintw(4,0,"%c", current_direction);
-        mvprintw(5,0,"%d", s.length-5);
+
+        mvprintw(1,0,"Score");
+        mvprintw(2,0,"%3d", s.length-5);
+        mvprintw(3,0,"%3c", current_direction);
         ch = getch();
         if(ch != ERR){
             switch(ch){
